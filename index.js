@@ -10,7 +10,7 @@ const BITS_PER_ELEMENT = 9;
  * @returns {string}
  */
 export function compress(input) {
-    const buf = new BitView(Buffer.alloc(Math.ceil(input.length * BITS_PER_ELEMENT / 8)));
+    const buf = new BitView(new ArrayBuffer(Math.ceil(input.length * BITS_PER_ELEMENT / 8)));
     for (let i = 0; i < input.length; i++) {
         buf.setBits(i * BITS_PER_ELEMENT, input[i], BITS_PER_ELEMENT);
     }
@@ -20,13 +20,13 @@ export function compress(input) {
 /**
  * Распаковать строку как массив
  * 
- * @param {string} compr - сжатые данные
+ * @param {string} compressed - сжатые данные
  * @returns {number[]}
  */
-export function decompress(compr) {
+export function decompress(compressed) {
     const result = [];
-    const inputBuf = Buffer.from(compr, 'base64');
-    const buf = new BitView(Buffer.alloc(inputBuf.byteLength));
+    const inputBuf = Buffer.from(compressed, 'base64');
+    const buf = new BitView(new ArrayBuffer(inputBuf.byteLength));
     inputBuf.copy(buf.buffer);
     const resultLength = Math.floor(buf.byteLength * 8 / BITS_PER_ELEMENT);
     for (let i = 0; i < resultLength; i++) {
