@@ -1,6 +1,8 @@
 import fs from 'fs';
 import { compress, decompress } from './index';
 
+const N_MIN = 1;
+const N_MAX = 300;
 const LOG_FILE = 'stats.log';
 let log;
 
@@ -12,20 +14,20 @@ afterAll(() => {
     fs.closeSync(log);
 });
 
-function logStats(source, compressed) {
+function logStats(testName, source, compressed) {
     if (Array.isArray(source)) {
         source = JSON.stringify(source);
     }
     const ratio = Math.round(compressed.length * 100 / source.length);
     fs.writeSync(log,
-        expect.getState().currentTestName + '\n' +
+        testName + '\n' +
         source + '\n' +
         compressed + '\n' +
         'Сжатие: ' + ratio + '%\n\n'
     );
 }
 
-const getRandom = () => Math.round(Math.random() * 299 + 1);
+const getRandom = () => Math.round(Math.random() * (N_MAX - N_MIN) + N_MIN);
 
 function getRandomData(length) {
     const result = [];
@@ -43,40 +45,22 @@ function getRangeData(min, max, dup = 1) {
     return result;
 }
 
-function genericTest(source) {
-    const z = compress(source);
-    expect(decompress(z)).toEqual(source);
-    logStats(source, z);
-}
+const testSuite = {
+    '50 случайных чисел': () => getRandomData(50),
+    '100 случайных чисел': () => getRandomData(100),
+    '500 случайных чисел': () => getRandomData(500),
+    '1000 случайных чисел': () => getRandomData(1000),
+    'Все числа из 1 знака': () => getRangeData(1, 9),
+    'Все числа из 2 знаков': () => getRangeData(10, 99),
+    'Все числа из 3 знаков': () => getRangeData(100, N_MAX),
+    'Каждого числа по 3': () => getRangeData(N_MIN, N_MAX, 3),
+};
 
-test('50 случайных чисел', () => {
-    genericTest(getRandomData(50));
-});
-
-test('100 случайных чисел', () => {
-    genericTest(getRandomData(100));
-});
-
-test('500 случайных чисел', () => {
-    genericTest(getRandomData(500));
-});
-
-test('1000 случайных чисел', () => {
-    genericTest(getRandomData(1000));
-});
-
-test('Все числа из 1 знака', () => {
-    genericTest(getRangeData(1, 9));
-});
-
-test('Все числа из 2 знаков', () => {
-    genericTest(getRangeData(10, 99));
-});
-
-test('Все числа из 3 знаков', () => {
-    genericTest(getRangeData(100, 300));
-});
-
-test('Каждого числа по 3', () => {
-    genericTest(getRangeData(1, 300, 3));
+Object.entries(testSuite).forEach(([testName, getData]) => {
+    test(testName, () => {
+        const src = getData();
+        const z = compress(src);
+        expect(decompress(z)).toEqual(src);
+        logStats(testName, src, z);
+    });
 });
